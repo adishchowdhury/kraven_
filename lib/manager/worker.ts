@@ -1,4 +1,4 @@
-﻿import { generateText } from "ai";
+import { generateText } from "ai";
 import { geminiModel, isGeminiConfigured, type GeminiModelTier } from "@/lib/manager/gemini";
 import { authorizeX402Spend, finalizeX402Settlement, failX402Intent } from "@/lib/blockchain/x402";
 import {
@@ -68,7 +68,7 @@ export async function executeSubtask(params: {
     if (!isRealX402PayerConfigured()) {
       console.warn("[x402 Flow] ALGOD_MNEMONIC/MANAGER_MNEMONIC not set — skipping real x402 flow, using regular research path");
     } else {
-      const idempotencyKey = `idem_${params.taskId}_market_research_${params.agentId}`;
+      const idempotencyKey = `idem_${params.taskId}_${params.subtaskId || "sub"}_${params.agentId}_${Date.now()}`;
       let intentId: string | null = null;
       try {
         console.log("[x402 Flow] Authorizing spend against task budget (Circuit Breaker)");

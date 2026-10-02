@@ -9,9 +9,9 @@ export function isGeminiConfigured() {
 // just a bigger number. Keep in sync with REGISTRY_AGENTS' `model` field in
 // lib/db/reset.ts.
 export const GEMINI_MODEL_TIERS = {
-  economy: "gemini-3.1-flash-lite",
-  standard: "gemini-3.5-flash",
-  premium: "gemini-3.1-pro-preview",
+  economy: "gemini-2.5-flash",
+  standard: "gemini-2.5-flash",
+  premium: "gemini-2.5-pro",
 } as const;
 
 export type GeminiModelTier = keyof typeof GEMINI_MODEL_TIERS;

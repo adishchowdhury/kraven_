@@ -28,7 +28,7 @@ async function handler(request: NextRequest) {
     timestamp: new Date().toISOString(),
     source: "Premium ALGORAND-Paid x402 Service (real settlement)",
     paymentVerified: true,
-    result: `Premium intelligence report on: "${query}". Major tailwinds include emerging digital assets regulations, expansion of cross-border micro-transactions, and increased institutional adoption of zero-knowledge smart-contracts. Growth trajectory exhibits a CAGR of 24.5% over the next 5 years.`,
+    result: `## Comprehensive Market Intelligence Report: "${query}"\n\n### Executive Summary\nThe market landscape for ${query} is experiencing rapid technological evolution and capital deployment. Major growth catalysts include regulatory clarity, widespread adoption of zero-knowledge smart contracts, autonomous agentic commerce, and accelerated expansion of decentralized micro-escrow frameworks.\n\n### Key Market Dynamics & Metrics\n- **Projected 5-Year CAGR**: 28.4% growth driven by enterprise automation.\n- **Key Value Drivers**: Programmatic micropayments, on-chain cryptographic settlement verification, and zero-trust dispute mediation.\n- **Primary Headwinds**: Cross-chain latency and fragmented liquidity bridges.\n\n### Strategic Takeaways\nOrganizations adopting autonomous micro-transaction protocols report an average 34% reduction in intermediary settlement friction and enhanced counterparty trust.`,
   };
 
   return NextResponse.json(premiumData);

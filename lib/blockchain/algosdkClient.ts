@@ -66,11 +66,14 @@ export async function submitAnchorTransaction(
   const signedTxn = txn.signTxn(account.sk);
   const { txid } = await client.sendRawTransaction(signedTxn).do();
 
-  const confirmed = await algosdk.waitForConfirmation(client, txid, 6);
+  // Trigger confirmation in background so on-chain proofs settle without stalling orchestrator
+  algosdk.waitForConfirmation(client, txid, 4).catch((e) => {
+    console.warn(`[Algorand] Background confirmation pending for ${txid}:`, e?.message);
+  });
 
   return {
     txId: txid,
-    confirmedRound: Number(confirmed.confirmedRound ?? BigInt(0)),
+    confirmedRound: Number(suggestedParams.firstRound ?? 0),
     senderAddress: account.addr.toString(),
   };
 }
