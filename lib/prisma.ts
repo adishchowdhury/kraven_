@@ -367,17 +367,80 @@ function createPrismaFirestoreProxy(): any {
 
 const firestoreProxy = createPrismaFirestoreProxy();
 
-// Unified Prisma interface: prefers real PostgreSQL/Supabase, falls back to Firestore proxy
+// ── Safe Prisma Wrapper with Automatic Resilient Fallback ───────────────────
 export const prisma = new Proxy({} as any, {
-  get(_target, prop: string) {
+  get(_target, modelProp: string) {
     const real = getRealPrisma();
-    if (real && typeof real[prop] !== "undefined") {
-      const val = real[prop];
-      if (typeof val === "function") {
-        return (...args: any[]) => val.apply(real, args);
-      }
-      return val;
+    const fallbackModel = firestoreProxy[modelProp];
+
+    if (modelProp === "$transaction") {
+      return async (arg: any) => {
+        try {
+          if (real && typeof real.$transaction === "function") {
+            return await real.$transaction(arg);
+          }
+        } catch (err: any) {
+          console.warn("[Prisma] Transaction fallback:", err.message);
+        }
+        return firestoreProxy.$transaction(arg);
+      };
     }
-    return firestoreProxy[prop];
+
+    if (modelProp === "$queryRaw" || modelProp === "$disconnect") {
+      return async (...args: any[]) => {
+        try {
+          if (real && typeof real[modelProp] === "function") {
+            return await real[modelProp](...args);
+          }
+        } catch (err: any) {
+          console.warn(`[Prisma] ${modelProp} fallback:`, err.message);
+        }
+        return (firestoreProxy as any)[modelProp]?.(...args);
+      };
+    }
+
+    const realModel = real ? real[modelProp] : null;
+    if (!realModel) {
+      return fallbackModel;
+    }
+
+    // Wrap every model method (findUnique, create, update, etc.) in a resilient try/catch
+    return new Proxy(realModel, {
+      get(target, methodProp: string) {
+        const originalMethod = target[methodProp];
+        const fallbackMethod = fallbackModel ? fallbackModel[methodProp] : null;
+
+        if (typeof originalMethod !== "function") {
+          return originalMethod ?? fallbackMethod;
+        }
+
+        return async (...args: any[]) => {
+          try {
+            return await originalMethod.apply(target, args);
+          } catch (err: any) {
+            const msg = err?.message || "";
+            const isConnectionOrDbError =
+              msg.includes("Can't reach database") ||
+              msg.includes("P1001") ||
+              msg.includes("P1000") ||
+              msg.includes("P1017") ||
+              msg.includes("ECONNREFUSED") ||
+              msg.includes("ETIMEDOUT") ||
+              msg.includes("ENOTFOUND") ||
+              msg.includes("Server has closed the connection");
+
+            if (isConnectionOrDbError || !originalMethod) {
+              console.warn(
+                `[Prisma Failover] Database unreachable (${msg.slice(0, 80)}...). Seamlessly failing over to cloud store for ${modelProp}.${methodProp}`
+              );
+              if (typeof fallbackMethod === "function") {
+                return await fallbackMethod(...args);
+              }
+            }
+            throw err;
+          }
+        };
+      },
+    });
   },
 });
