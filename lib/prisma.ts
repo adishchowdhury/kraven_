@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { firestoreService } from "@/lib/firestoreDb";
+import { supabaseService } from "@/lib/supabase";
 import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -104,42 +105,85 @@ function createPrismaFirestoreProxy(): any {
         // ── TASK ──────────────────────────────────────────
         task: {
           findMany: async (args?: any) => {
-            const userId = args?.where?.userId;
-            const tasks = await firestoreService.getTasks(userId);
-            return tasks.map((t) => ({
-              ...t,
-              createdAt: new Date(t.createdAt),
-              updatedAt: new Date(t.updatedAt || t.createdAt),
-            }));
+            try {
+              const userId = args?.where?.userId;
+              const tasks = await supabaseService.getTasks(userId);
+              return tasks.map((t: any) => ({
+                ...t,
+                createdAt: new Date(t.createdAt),
+                updatedAt: new Date(t.updatedAt || t.createdAt),
+              }));
+            } catch {
+              const userId = args?.where?.userId;
+              const tasks = await firestoreService.getTasks(userId);
+              return tasks.map((t: any) => ({
+                ...t,
+                createdAt: new Date(t.createdAt),
+                updatedAt: new Date(t.updatedAt || t.createdAt),
+              }));
+            }
           },
           findUnique: async ({ where }: any) => {
-            const task = await firestoreService.getTask(where.id);
-            if (!task) return null;
-            return {
-              ...task,
-              createdAt: new Date(task.createdAt),
-              updatedAt: new Date(task.updatedAt || task.createdAt),
-            };
+            try {
+              const task = await supabaseService.getTask(where.id);
+              if (!task) return null;
+              return {
+                ...task,
+                createdAt: new Date(task.createdAt),
+                updatedAt: new Date(task.updatedAt || task.createdAt),
+              };
+            } catch {
+              const task = await firestoreService.getTask(where.id);
+              if (!task) return null;
+              return {
+                ...task,
+                createdAt: new Date(task.createdAt),
+                updatedAt: new Date(task.updatedAt || task.createdAt),
+              };
+            }
           },
           create: async ({ data }: any) => {
-            const created = await firestoreService.createTask(data);
-            return {
-              ...created,
-              createdAt: new Date(created.createdAt),
-              updatedAt: new Date(created.updatedAt || created.createdAt),
-            };
+            try {
+              const created = await supabaseService.createTask(data);
+              return {
+                ...created,
+                createdAt: new Date(created.createdAt),
+                updatedAt: new Date(created.updatedAt || created.createdAt),
+              };
+            } catch (err) {
+              const created = await firestoreService.createTask(data);
+              return {
+                ...created,
+                createdAt: new Date(created.createdAt),
+                updatedAt: new Date(created.updatedAt || created.createdAt),
+              };
+            }
           },
           update: async ({ where, data }: any) => {
-            const updated = await firestoreService.updateTask(where.id, data);
-            return {
-              ...updated,
-              createdAt: new Date(updated.createdAt),
-              updatedAt: new Date(updated.updatedAt || updated.createdAt),
-            };
+            try {
+              const updated = await supabaseService.updateTask(where.id, data);
+              return {
+                ...updated,
+                createdAt: new Date(updated.createdAt),
+                updatedAt: new Date(updated.updatedAt || updated.createdAt),
+              };
+            } catch {
+              const updated = await firestoreService.updateTask(where.id, data);
+              return {
+                ...updated,
+                createdAt: new Date(updated.createdAt),
+                updatedAt: new Date(updated.updatedAt || updated.createdAt),
+              };
+            }
           },
           count: async () => {
-            const tasks = await firestoreService.getTasks();
-            return tasks.length;
+            try {
+              const tasks = await supabaseService.getTasks();
+              return tasks.length;
+            } catch {
+              const tasks = await firestoreService.getTasks();
+              return tasks.length;
+            }
           },
         },
 
