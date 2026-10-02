@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    container_name: momentum-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: momentum
+      POSTGRES_PASSWORD: momentum_dev_pw
+      POSTGRES_DB: momentum
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

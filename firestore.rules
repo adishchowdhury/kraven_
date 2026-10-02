@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'adishchowdhury18@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // ── USERS ─────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && (resource.data.id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.id == userId
+        && request.resource.data.keys().hasAll(['id', 'email', 'name'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 100
+        && request.resource.data.email is string && request.resource.data.email.size() <= 150;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin())
+        && request.resource.data.id == existing().id;
+      allow delete: if isAdmin();
+    }
+
+    // ── TASKS ─────────────────────────────────────────────────────────────
+    match /tasks/{taskId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.userId == 'demo-user' || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.userId == 'demo-user' || isAdmin());
+      allow create: if isSignedIn() && isValidId(taskId)
+        && request.resource.data.keys().hasAll(['id', 'prompt', 'budget', 'status', 'userId'])
+        && (request.resource.data.userId == request.auth.uid || request.resource.data.userId == 'demo-user' || isAdmin())
+        && request.resource.data.prompt is string && request.resource.data.prompt.size() <= 4000
+        && request.resource.data.budget is number && request.resource.data.budget > 0;
+      allow update: if isSignedIn() && isValidId(taskId)
+        && (resource.data.userId == request.auth.uid || resource.data.userId == 'demo-user' || isAdmin())
+        && request.resource.data.id == resource.data.id;
+      allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      match /subtasks/{subtaskId} {
+        allow read, write: if isSignedIn() && isValidId(subtaskId);
+      }
+    }
+
+    // ── AGENTS REGISTRY ───────────────────────────────────────────────────
+    match /agents/{agentId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && (isAdmin() || request.auth.token.email_verified == true);
+    }
+
+    // ── WALLETS ───────────────────────────────────────────────────────────
+    match /wallets/{walletId} {
+      allow get, list: if isSignedIn() || true;
+      allow create, update: if isSignedIn() && isValidId(walletId);
+      allow delete: if isAdmin();
+    }
+
+    // ── EVENTS ────────────────────────────────────────────────────────────
+    match /events/{eventId} {
+      allow get, list: if isSignedIn() || true;
+      allow create: if isValidId(eventId);
+      allow update, delete: if isAdmin();
+    }
+
+    // ── TRANSACTIONS ──────────────────────────────────────────────────────
+    match /transactions/{transactionId} {
+      allow get, list: if isSignedIn() || true;
+      allow create: if isValidId(transactionId);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

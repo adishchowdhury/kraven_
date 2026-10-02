@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile authenticated via Google or Demo account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "name": { "type": "string", "description": "Display name" },
+        "isDemo": { "type": "boolean", "description": "Whether this is a demo user" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["id", "email", "name"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Autonomous agent task created by a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique task identifier" },
+        "prompt": { "type": "string", "description": "Original user objective prompt" },
+        "budget": { "type": "number", "description": "Total allocated token budget" },
+        "remainingBudget": { "type": "number", "description": "Remaining budget" },
+        "qualityThreshold": { "type": "number", "description": "Minimum QA passing score (0-100)" },
+        "status": {
+          "type": "string",
+          "enum": ["CREATED", "PLANNING", "IN_PROGRESS", "AWAITING_QA", "COMPLETED", "FAILED", "CANCELLING", "CANCELLED"],
+          "description": "Lifecycle state of the task"
+        },
+        "managerId": { "type": "string", "description": "ID of coordinating manager agent" },
+        "finalOutput": { "type": "string", "description": "JSON serialized final deliverable" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "optimizationMode": { "type": "string", "enum": ["A", "B"], "description": "Prompt optimization mode" },
+        "isOptimized": { "type": "boolean", "description": "Whether prompt was compiled" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["id", "prompt", "budget", "status", "userId"]
+    },
+    "Subtask": {
+      "title": "Subtask",
+      "description": "Decomposed unit of work executed by an agent",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Subtask identifier" },
+        "taskId": { "type": "string", "description": "Parent task ID" },
+        "type": { "type": "string", "description": "Role / capability required" },
+        "requiredCapability": { "type": "string", "description": "Matching agent capability" },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "BIDDING", "ASSIGNED", "EXECUTING", "AWAITING_QA", "DONE", "FAILED"],
+          "description": "Subtask status"
+        },
+        "assignedAgentId": { "type": "string", "description": "ID of agent working on subtask" },
+        "output": { "type": "string", "description": "Subtask work payload" },
+        "qaScore": { "type": "number", "description": "QA validation score" },
+        "qaReason": { "type": "string", "description": "QA validation reasoning" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["id", "taskId", "type", "status"]
+    },
+    "Agent": {
+      "title": "Agent",
+      "description": "Worker agent registered in marketplace",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Agent identifier" },
+        "name": { "type": "string", "description": "Agent display name" },
+        "capabilities": { "type": "string", "description": "JSON array of agent capabilities" },
+        "price": { "type": "number", "description": "Price per execution in tokens" },
+        "endpoint": { "type": "string", "description": "Agent execution endpoint or address" },
+        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "REVOKED"], "description": "Agent status" },
+        "provider": { "type": "string", "description": "Provider type (local or agentverse)" },
+        "reputation": { "type": "number", "description": "Composite reputation score (0-100)" },
+        "totalJobs": { "type": "number", "description": "Total jobs run" },
+        "successRate": { "type": "number", "description": "Success rate" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "name", "price", "status"]
+    },
+    "Wallet": {
+      "title": "Wallet",
+      "description": "Virtual token wallet for user, manager, or agent",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Wallet identifier" },
+        "type": { "type": "string", "enum": ["MANAGER", "AGENT", "USER"], "description": "Wallet type" },
+        "agentId": { "type": "string", "description": "Associated agent ID if agent wallet" },
+        "balance": { "type": "number", "description": "Token balance" },
+        "algorandAddress": { "type": "string", "description": "On-chain Algorand mirror address" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last updated" }
+      },
+      "required": ["id", "type", "balance"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "Auditable workflow lifecycle event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Event ID" },
+        "taskId": { "type": "string", "description": "Associated task ID" },
+        "actor": { "type": "string", "description": "Entity performing the action" },
+        "eventType": { "type": "string", "description": "Event type identifier" },
+        "payload": { "type": "string", "description": "JSON serialized event details" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp" }
+      },
+      "required": ["id", "actor", "eventType"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Central ledger transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Transaction identifier" },
+        "taskId": { "type": "string", "description": "Task identifier" },
+        "fromWalletId": { "type": "string", "description": "Sender wallet ID" },
+        "toWalletId": { "type": "string", "description": "Receiver wallet ID" },
+        "amount": { "type": "number", "description": "Token amount transferred" },
+        "purpose": { "type": "string", "description": "Reason for transfer" },
+        "type": { "type": "string", "enum": ["LOCK", "PAYOUT", "REFUND", "BLOCKED_ATTEMPT"], "description": "Transfer type" },
+        "status": { "type": "string", "enum": ["APPROVED", "BLOCKED"], "description": "Circuit breaker approval status" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Execution timestamp" }
+      },
+      "required": ["id", "taskId", "fromWalletId", "toWalletId", "amount", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Tasks created by users"
+    },
+    "/tasks/{taskId}/subtasks/{subtaskId}": {
+      "schema": { "$ref": "#/entities/Subtask" },
+      "description": "Subtasks belonging to a task"
+    },
+    "/agents/{agentId}": {
+      "schema": { "$ref": "#/entities/Agent" },
+      "description": "Worker agent registry"
+    },
+    "/wallets/{walletId}": {
+      "schema": { "$ref": "#/entities/Wallet" },
+      "description": "Virtual token balances"
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Real-time audit log events"
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Ledger transactions"
+    }
+  }
+}

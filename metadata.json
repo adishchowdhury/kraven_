@@ -1,0 +1,7 @@
+{
+  "name": "Kraven — AI Workforce Command Center",
+  "description": "Autonomous AI workforce optimizer sandbox",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
