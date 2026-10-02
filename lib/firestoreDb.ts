@@ -180,6 +180,15 @@ export const firestoreService = {
     return merged;
   },
 
+  async createTask(data: any): Promise<any> {
+    const taskId = data.id || `task_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    return this.setTask(taskId, data);
+  },
+
+  async updateTask(taskId: string, data: any): Promise<any> {
+    return this.setTask(taskId, data);
+  },
+
   // ── SUBTASKS ──────────────────────────────────────────────────────────
   async getSubtasks(taskId: string): Promise<any[]> {
     const memSubtasks = Array.from(getMemoryCollection("subtasks").values()).filter(
@@ -223,6 +232,18 @@ export const firestoreService = {
     return merged;
   },
 
+  async createSubtask(data: any): Promise<any> {
+    const taskId = data.taskId || "default-task";
+    const subtaskId = data.id || `sub_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    return this.setSubtask(taskId, subtaskId, data);
+  },
+
+  async updateSubtask(subtaskId: string, data: any): Promise<any> {
+    const existing = getMemoryCollection("subtasks").get(subtaskId) || {};
+    const taskId = data.taskId || existing.taskId || "default-task";
+    return this.setSubtask(taskId, subtaskId, data);
+  },
+
   // ── AGENTS ────────────────────────────────────────────────────────────
   async getAgents(): Promise<any[]> {
     const memAgents = Array.from(getMemoryCollection("agents").values());
@@ -245,6 +266,29 @@ export const firestoreService = {
       console.warn("[Firestore] getAgents fallback:", err.message);
     }
     return memAgents;
+  },
+
+  async getAgent(id: string): Promise<any | null> {
+    return getMemoryCollection("agents").get(id) || null;
+  },
+
+  async upsertAgent(data: any): Promise<any> {
+    const id = data.id || `agent_${Date.now()}`;
+    getMemoryCollection("agents").set(id, data);
+    if (db) {
+      setDoc(doc(db, "agents", id), data, { merge: true }).catch(() => {});
+    }
+    return data;
+  },
+
+  async updateAgent(id: string, data: any): Promise<any> {
+    const existing = getMemoryCollection("agents").get(id) || {};
+    const merged = { ...existing, ...data, id };
+    getMemoryCollection("agents").set(id, merged);
+    if (db) {
+      setDoc(doc(db, "agents", id), merged, { merge: true }).catch(() => {});
+    }
+    return merged;
   },
 
   // ── WALLETS ───────────────────────────────────────────────────────────
@@ -288,6 +332,11 @@ export const firestoreService = {
     return updated;
   },
 
+  async upsertWallet(data: any): Promise<any> {
+    const id = data.id || "wallet-temp";
+    return this.updateWallet(id, data);
+  },
+
   // ── EVENTS ────────────────────────────────────────────────────────────
   async addEvent(event: any): Promise<any> {
     const id = event.id || `evt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -302,6 +351,10 @@ export const firestoreService = {
       setDoc(doc(db, "events", id), full).catch(() => {});
     }
     return full;
+  },
+
+  async createEvent(data: any): Promise<any> {
+    return this.addEvent(data);
   },
 
   async getEvents(taskId?: string): Promise<any[]> {
@@ -326,6 +379,10 @@ export const firestoreService = {
       setDoc(doc(db, "transactions", id), full).catch(() => {});
     }
     return full;
+  },
+
+  async createTransaction(data: any): Promise<any> {
+    return this.addTransaction(data);
   },
 
   async getTransactions(taskId?: string): Promise<any[]> {
